@@ -1,8 +1,6 @@
 #![no_std]
 
-use soroban_sdk::{
-    contract, contractimpl, panic_with_error, token, Address, BytesN, Env,
-};
+use soroban_sdk::{contract, contractimpl, panic_with_error, token, Address, BytesN, Env};
 
 mod errors;
 mod test;
@@ -56,17 +54,9 @@ impl EscrowContract {
             panic_with_error!(&env, EscrowError::AlreadyLocked);
         }
 
-        let usdc_id: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::UsdcAsset)
-            .unwrap();
+        let usdc_id: Address = env.storage().instance().get(&DataKey::UsdcAsset).unwrap();
         let usdc = token::Client::new(&env, &usdc_id);
-        usdc.transfer(
-            &pool,
-            &env.current_contract_address(),
-            &(amount as i128),
-        );
+        usdc.transfer(&pool, &env.current_contract_address(), &(amount as i128));
 
         let record = EscrowRecord {
             invoice_id: invoice_id.clone(),
@@ -94,11 +84,7 @@ impl EscrowContract {
             .get(&key)
             .unwrap_or_else(|| panic_with_error!(&env, EscrowError::NotFound));
 
-        let usdc_id: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::UsdcAsset)
-            .unwrap();
+        let usdc_id: Address = env.storage().instance().get(&DataKey::UsdcAsset).unwrap();
         let usdc = token::Client::new(&env, &usdc_id);
         usdc.transfer(
             &env.current_contract_address(),
@@ -110,11 +96,7 @@ impl EscrowContract {
         true
     }
 
-    pub fn release_to_pool(
-        env: Env,
-        invoice_id: BytesN<32>,
-        repayment_amount: u128,
-    ) -> bool {
+    pub fn release_to_pool(env: Env, invoice_id: BytesN<32>, repayment_amount: u128) -> bool {
         let pool: Address = env
             .storage()
             .instance()
@@ -129,11 +111,7 @@ impl EscrowContract {
             .get(&key)
             .unwrap_or_else(|| panic_with_error!(&env, EscrowError::NotFound));
 
-        let usdc_id: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::UsdcAsset)
-            .unwrap();
+        let usdc_id: Address = env.storage().instance().get(&DataKey::UsdcAsset).unwrap();
         let usdc = token::Client::new(&env, &usdc_id);
         usdc.transfer(
             &env.current_contract_address(),
@@ -151,11 +129,7 @@ impl EscrowContract {
             return false;
         }
 
-        let admin: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::Admin)
-            .unwrap();
+        let admin: Address = env.storage().instance().get(&DataKey::Admin).unwrap();
         let pool: Address = env
             .storage()
             .instance()
@@ -168,11 +142,7 @@ impl EscrowContract {
         pool.require_auth();
 
         let record: EscrowRecord = env.storage().persistent().get(&key).unwrap();
-        let usdc_id: Address = env
-            .storage()
-            .instance()
-            .get(&DataKey::UsdcAsset)
-            .unwrap();
+        let usdc_id: Address = env.storage().instance().get(&DataKey::UsdcAsset).unwrap();
         let usdc = token::Client::new(&env, &usdc_id);
         usdc.transfer(
             &env.current_contract_address(),

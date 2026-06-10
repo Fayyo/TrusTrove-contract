@@ -23,13 +23,13 @@ impl RegistryContract {
         env.storage().instance().set(&DataKey::Admin, &admin);
     }
 
-    pub fn register_issuer(
-        env: Env,
-        address: Address,
-        metadata: Map<String, String>,
-    ) -> bool {
+    pub fn register_issuer(env: Env, address: Address, metadata: Map<String, String>) -> bool {
         address.require_auth();
-        if env.storage().persistent().has(&DataKey::Profile(address.clone())) {
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::Profile(address.clone()))
+        {
             panic_with_error!(&env, RegistryError::AlreadyRegistered);
         }
         let profile = Profile {
@@ -46,13 +46,13 @@ impl RegistryContract {
         true
     }
 
-    pub fn register_buyer(
-        env: Env,
-        address: Address,
-        metadata: Map<String, String>,
-    ) -> bool {
+    pub fn register_buyer(env: Env, address: Address, metadata: Map<String, String>) -> bool {
         address.require_auth();
-        if env.storage().persistent().has(&DataKey::Profile(address.clone())) {
+        if env
+            .storage()
+            .persistent()
+            .has(&DataKey::Profile(address.clone()))
+        {
             panic_with_error!(&env, RegistryError::AlreadyRegistered);
         }
         let profile = Profile {

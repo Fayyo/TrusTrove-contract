@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{RegistryContract, RegistryContractClient};
-use soroban_sdk::{testutils::Address as _, map, Address, Env, String};
+use soroban_sdk::{map, testutils::Address as _, Address, Env, String};
 
 fn setup() -> (Env, RegistryContractClient<'static>) {
     let env = Env::default();
@@ -25,7 +25,13 @@ fn test_register_issuer() {
     let admin = Address::generate(&env);
     client.initialize(&admin);
     let issuer = Address::generate(&env);
-    let metadata = map![&env, (String::from_str(&env, "name"), String::from_str(&env, "Acme Corp"))];
+    let metadata = map![
+        &env,
+        (
+            String::from_str(&env, "name"),
+            String::from_str(&env, "Acme Corp")
+        )
+    ];
     let result = client.register_issuer(&issuer, &metadata);
     assert!(result);
     let profile = client.get_profile(&issuer);

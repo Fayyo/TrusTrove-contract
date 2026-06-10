@@ -83,7 +83,9 @@ impl InvoiceContract {
 
         let counter: u64 = env.storage().instance().get(&DataKey::Counter).unwrap();
         let next_counter = counter + 1;
-        env.storage().instance().set(&DataKey::Counter, &next_counter);
+        env.storage()
+            .instance()
+            .set(&DataKey::Counter, &next_counter);
 
         let now = env.ledger().timestamp();
         let mut hash_input = Bytes::new(&env);
@@ -123,7 +125,9 @@ impl InvoiceContract {
 
         let inv_key = DataKey::Invoice(invoice_id.clone());
         env.storage().persistent().set(&inv_key, &invoice);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
 
         self::extend_index(&env, &DataKey::InvoicesByIssuer(issuer), &invoice_id);
         self::extend_index(&env, &DataKey::InvoicesByBuyer(buyer), &invoice_id);
@@ -133,15 +137,17 @@ impl InvoiceContract {
             &invoice_id,
         );
 
-        events::invoice_created(&env, &invoice_id, &invoice.issuer, &invoice.buyer, &face_value);
+        events::invoice_created(
+            &env,
+            &invoice_id,
+            &invoice.issuer,
+            &invoice.buyer,
+            &face_value,
+        );
         invoice_id
     }
 
-    pub fn list_for_financing(
-        env: Env,
-        invoice_id: BytesN<32>,
-        discount_bps: u32,
-    ) -> bool {
+    pub fn list_for_financing(env: Env, invoice_id: BytesN<32>, discount_bps: u32) -> bool {
         let inv_key = DataKey::Invoice(invoice_id.clone());
         let mut invoice: Invoice = env
             .storage()
@@ -158,18 +164,21 @@ impl InvoiceContract {
         invoice.status = InvoiceStatus::Listed;
         invoice.discount_bps = discount_bps;
         env.storage().persistent().set(&inv_key, &invoice);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
 
-        self::move_status_index(&env, &invoice_id, InvoiceStatus::Created, InvoiceStatus::Listed);
+        self::move_status_index(
+            &env,
+            &invoice_id,
+            InvoiceStatus::Created,
+            InvoiceStatus::Listed,
+        );
         events::invoice_listed(&env, &invoice_id, &discount_bps);
         true
     }
 
-    pub fn mark_funded(
-        env: Env,
-        invoice_id: BytesN<32>,
-        funded_amount: u128,
-    ) -> bool {
+    pub fn mark_funded(env: Env, invoice_id: BytesN<32>, funded_amount: u128) -> bool {
         let pool: Address = env
             .storage()
             .instance()
@@ -190,9 +199,16 @@ impl InvoiceContract {
         invoice.funded_amount = funded_amount;
         invoice.funded_at = Some(env.ledger().timestamp());
         env.storage().persistent().set(&inv_key, &invoice);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
 
-        self::move_status_index(&env, &invoice_id, InvoiceStatus::Listed, InvoiceStatus::Funded);
+        self::move_status_index(
+            &env,
+            &invoice_id,
+            InvoiceStatus::Listed,
+            InvoiceStatus::Funded,
+        );
         events::invoice_funded(&env, &invoice_id, &funded_amount);
         true
     }
@@ -211,18 +227,21 @@ impl InvoiceContract {
         invoice.status = InvoiceStatus::Active;
         invoice.shipped_at = Some(env.ledger().timestamp());
         env.storage().persistent().set(&inv_key, &invoice);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
 
-        self::move_status_index(&env, &invoice_id, InvoiceStatus::Funded, InvoiceStatus::Active);
+        self::move_status_index(
+            &env,
+            &invoice_id,
+            InvoiceStatus::Funded,
+            InvoiceStatus::Active,
+        );
         events::invoice_shipped(&env, &invoice_id);
         true
     }
 
-    pub fn confirm_delivery(
-        env: Env,
-        invoice_id: BytesN<32>,
-        confirmer: Address,
-    ) -> bool {
+    pub fn confirm_delivery(env: Env, invoice_id: BytesN<32>, confirmer: Address) -> bool {
         confirmer.require_auth();
 
         let inv_key = DataKey::Invoice(invoice_id.clone());
@@ -263,7 +282,9 @@ impl InvoiceContract {
         }
 
         env.storage().persistent().set(&inv_key, &invoice);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
         events::delivery_confirmed(&env, &invoice_id, &confirmer);
         true
     }
@@ -286,11 +307,8 @@ impl InvoiceContract {
             .get(&DataKey::PoolContract)
             .unwrap();
 
-        let usdc_asset: Address = env.invoke_contract(
-            &pool,
-            &Symbol::new(&env, "get_usdc_asset"),
-            (),
-        );
+        let usdc_asset: Address =
+            env.invoke_contract(&pool, &Symbol::new(&env, "get_usdc_asset"), ());
 
         let usdc = token::Client::new(&env, &usdc_asset);
         usdc.transfer(&invoice.buyer, &pool, &(invoice.face_value as i128));
@@ -305,7 +323,9 @@ impl InvoiceContract {
         updated.status = InvoiceStatus::Repaid;
         updated.repaid_at = Some(env.ledger().timestamp());
         env.storage().persistent().set(&inv_key, &updated);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
 
         self::move_status_index(
             &env,
@@ -345,7 +365,9 @@ impl InvoiceContract {
         let prev_status = invoice.status.clone();
         invoice.status = InvoiceStatus::Defaulted;
         env.storage().persistent().set(&inv_key, &invoice);
-        env.storage().persistent().extend_ttl(&inv_key, 100, 2_000_000);
+        env.storage()
+            .persistent()
+            .extend_ttl(&inv_key, 100, 2_000_000);
 
         self::move_status_index(&env, &invoice_id, &prev_status, &InvoiceStatus::Defaulted);
 
@@ -406,7 +428,11 @@ impl InvoiceContract {
         let mut result: Vec<Invoice> = Vec::new(&env);
         for i in 0..ids.len() {
             let id = ids.get(i).unwrap();
-            let invoice: Invoice = env.storage().persistent().get(&DataKey::Invoice(id)).unwrap();
+            let invoice: Invoice = env
+                .storage()
+                .persistent()
+                .get(&DataKey::Invoice(id))
+                .unwrap();
             result.push_back(invoice);
         }
         result
@@ -421,7 +447,11 @@ impl InvoiceContract {
         let mut result: Vec<Invoice> = Vec::new(&env);
         for i in 0..ids.len() {
             let id = ids.get(i).unwrap();
-            let invoice: Invoice = env.storage().persistent().get(&DataKey::Invoice(id)).unwrap();
+            let invoice: Invoice = env
+                .storage()
+                .persistent()
+                .get(&DataKey::Invoice(id))
+                .unwrap();
             result.push_back(invoice);
         }
         result
@@ -436,7 +466,11 @@ impl InvoiceContract {
         let mut result: Vec<Invoice> = Vec::new(&env);
         for i in 0..ids.len() {
             let id = ids.get(i).unwrap();
-            let invoice: Invoice = env.storage().persistent().get(&DataKey::Invoice(id)).unwrap();
+            let invoice: Invoice = env
+                .storage()
+                .persistent()
+                .get(&DataKey::Invoice(id))
+                .unwrap();
             result.push_back(invoice);
         }
         result
@@ -444,34 +478,24 @@ impl InvoiceContract {
 }
 
 fn extend_index(env: &Env, key: &DataKey, invoice_id: &BytesN<32>) {
-    let mut ids: Vec<BytesN<32>> = env
-        .storage()
-        .persistent()
-        .get(key)
-        .unwrap_or(Vec::new(env));
+    let mut ids: Vec<BytesN<32>> = env.storage().persistent().get(key).unwrap_or(Vec::new(env));
     ids.push_back(invoice_id.clone());
     env.storage().persistent().set(key, &ids);
     env.storage().persistent().extend_ttl(key, 100, 2_000_000);
 }
 
-fn move_status_index(
-    env: &Env,
-    invoice_id: &BytesN<32>,
-    from: &InvoiceStatus,
-    to: &InvoiceStatus,
-) {
+fn move_status_index(env: &Env, invoice_id: &BytesN<32>, from: &InvoiceStatus, to: &InvoiceStatus) {
     let from_key = DataKey::InvoicesByStatus(from.clone() as u32);
     let mut from_ids: Vec<BytesN<32>> = env
         .storage()
         .persistent()
         .get(&from_key)
         .unwrap_or(Vec::new(env));
-    from_ids = from_ids
-        .iter()
-        .filter(|id| *id != *invoice_id)
-        .collect();
+    from_ids = from_ids.iter().filter(|id| *id != *invoice_id).collect();
     env.storage().persistent().set(&from_key, &from_ids);
-    env.storage().persistent().extend_ttl(&from_key, 100, 2_000_000);
+    env.storage()
+        .persistent()
+        .extend_ttl(&from_key, 100, 2_000_000);
 
     let to_key = DataKey::InvoicesByStatus(to.clone() as u32);
     let mut to_ids: Vec<BytesN<32>> = env
@@ -481,5 +505,7 @@ fn move_status_index(
         .unwrap_or(Vec::new(env));
     to_ids.push_back(invoice_id.clone());
     env.storage().persistent().set(&to_key, &to_ids);
-    env.storage().persistent().extend_ttl(&to_key, 100, 2_000_000);
+    env.storage()
+        .persistent()
+        .extend_ttl(&to_key, 100, 2_000_000);
 }

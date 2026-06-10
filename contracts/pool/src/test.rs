@@ -4,13 +4,11 @@ use soroban_sdk::{
     contract, contractimpl, contracttype, testutils::Address as _, Address, BytesN, Env,
 };
 
-use crate::{PoolContract, PoolContractClient, LPPosition, PoolStats};
+use crate::{LPPosition, PoolContract, PoolContractClient, PoolStats};
 
+use trusttrove_escrow::{EscrowContract as RealEscrow, EscrowContractClient as RealEscrowClient};
 use trusttrove_invoice::{
     InvoiceContract as RealInvoice, InvoiceContractClient as RealInvoiceClient,
-};
-use trusttrove_escrow::{
-    EscrowContract as RealEscrow, EscrowContractClient as RealEscrowClient,
 };
 
 // --------------- Mock Registry ---------------
@@ -53,16 +51,11 @@ impl MockToken {
         env.storage()
             .persistent()
             .set(&from_key, &(from_bal - amount));
-        env.storage()
-            .persistent()
-            .set(&to_key, &(to_bal + amount));
+        env.storage().persistent().set(&to_key, &(to_bal + amount));
     }
 
     pub fn balance(env: Env, addr: Address) -> i128 {
-        env.storage()
-            .persistent()
-            .get(&TKey(addr))
-            .unwrap_or(0)
+        env.storage().persistent().get(&TKey(addr)).unwrap_or(0)
     }
 }
 

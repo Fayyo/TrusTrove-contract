@@ -14,22 +14,12 @@ impl MockToken {
     pub fn transfer(env: Env, from: Address, to: Address, amount: i128) {
         let from_key = BalanceKey(from.clone());
         let to_key = BalanceKey(to.clone());
-        let from_bal: i128 = env
-            .storage()
-            .persistent()
-            .get(&from_key)
-            .unwrap_or(0);
-        let to_bal: i128 = env
-            .storage()
-            .persistent()
-            .get(&to_key)
-            .unwrap_or(0);
+        let from_bal: i128 = env.storage().persistent().get(&from_key).unwrap_or(0);
+        let to_bal: i128 = env.storage().persistent().get(&to_key).unwrap_or(0);
         env.storage()
             .persistent()
             .set(&from_key, &(from_bal - amount));
-        env.storage()
-            .persistent()
-            .set(&to_key, &(to_bal + amount));
+        env.storage().persistent().set(&to_key, &(to_bal + amount));
     }
 
     pub fn balance(env: Env, addr: Address) -> i128 {
@@ -43,7 +33,13 @@ impl MockToken {
 #[contracttype]
 pub struct BalanceKey(Address);
 
-fn setup() -> (Env, EscrowContractClient<'static>, Address, Address, Address) {
+fn setup() -> (
+    Env,
+    EscrowContractClient<'static>,
+    Address,
+    Address,
+    Address,
+) {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -53,7 +49,9 @@ fn setup() -> (Env, EscrowContractClient<'static>, Address, Address, Address) {
     let mock_token = MockTokenClient::new(&env, &usdc_id);
 
     let pool_bal_key = BalanceKey(pool.clone());
-    env.storage().persistent().set(&pool_bal_key, &10_000_000_000_000i128);
+    env.storage()
+        .persistent()
+        .set(&pool_bal_key, &10_000_000_000_000i128);
 
     let contract_id = env.register_contract(None, EscrowContract);
     let client = EscrowContractClient::new(&env, &contract_id);

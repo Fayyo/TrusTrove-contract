@@ -4,9 +4,7 @@ use soroban_sdk::{
     contract, contractimpl, contracttype, testutils::Address as _, Address, BytesN, Env, Vec,
 };
 
-use crate::{
-    InvoiceContract, InvoiceContractClient, InvoiceError, InvoiceStatus,
-};
+use crate::{InvoiceContract, InvoiceContractClient, InvoiceError, InvoiceStatus};
 
 #[contract]
 pub struct MockRegistry;

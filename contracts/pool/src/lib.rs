@@ -26,9 +26,7 @@ impl PoolContract {
             panic_with_error!(&env, PoolError::AlreadyInitialized);
         }
         admin.require_auth();
-        env.storage()
-            .instance()
-            .set(&DataKey::Admin, &admin);
+        env.storage().instance().set(&DataKey::Admin, &admin);
         env.storage()
             .instance()
             .set(&DataKey::InvoiceContract, &invoice_contract);
@@ -38,15 +36,11 @@ impl PoolContract {
         env.storage()
             .instance()
             .set(&DataKey::UsdcAsset, &usdc_asset);
-        env.storage()
-            .instance()
-            .set(&DataKey::TotalShares, &0u128);
+        env.storage().instance().set(&DataKey::TotalShares, &0u128);
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &0u128);
-        env.storage()
-            .instance()
-            .set(&DataKey::TotalFunded, &0u128);
+        env.storage().instance().set(&DataKey::TotalFunded, &0u128);
         env.storage()
             .instance()
             .set(&DataKey::TotalYieldDistributed, &0u128);
@@ -56,10 +50,7 @@ impl PoolContract {
     }
 
     pub fn get_usdc_asset(env: Env) -> Address {
-        env.storage()
-            .instance()
-            .get(&DataKey::UsdcAsset)
-            .unwrap()
+        env.storage().instance().get(&DataKey::UsdcAsset).unwrap()
     }
 
     pub fn deposit(env: Env, lp: Address, usdc_amount: u128) -> u128 {
@@ -73,7 +64,11 @@ impl PoolContract {
         usdc.transfer(&lp, &env.current_contract_address(), &(usdc_amount as i128));
 
         let total_shares: u128 = env.storage().instance().get(&DataKey::TotalShares).unwrap();
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap();
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap();
 
         let shares_to_issue = if total_shares == 0 {
             usdc_amount
@@ -89,11 +84,7 @@ impl PoolContract {
             .set(&DataKey::TotalDeposits, &(total_deposits + usdc_amount));
 
         let lp_shares_key = DataKey::LPShares(lp.clone());
-        let lp_shares: u128 = env
-            .storage()
-            .persistent()
-            .get(&lp_shares_key)
-            .unwrap_or(0);
+        let lp_shares: u128 = env.storage().persistent().get(&lp_shares_key).unwrap_or(0);
         env.storage()
             .persistent()
             .set(&lp_shares_key, &(lp_shares + shares_to_issue));
@@ -115,11 +106,7 @@ impl PoolContract {
             .extend_ttl(&lp_deposit_count_key, 100, 2_000_000);
 
         let lp_init_key = DataKey::LPInitialDeposit(lp.clone());
-        let init_dep: u128 = env
-            .storage()
-            .persistent()
-            .get(&lp_init_key)
-            .unwrap_or(0);
+        let init_dep: u128 = env.storage().persistent().get(&lp_init_key).unwrap_or(0);
         env.storage()
             .persistent()
             .set(&lp_init_key, &(init_dep + usdc_amount));
@@ -148,7 +135,11 @@ impl PoolContract {
         }
 
         let total_shares: u128 = env.storage().instance().get(&DataKey::TotalShares).unwrap();
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap();
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap();
         let total_funded: u128 = env.storage().instance().get(&DataKey::TotalFunded).unwrap();
         let available = total_deposits - total_funded;
 
@@ -180,11 +171,7 @@ impl PoolContract {
             .extend_ttl(&lp_shares_key, 100, 2_000_000);
 
         let init_dep_key = DataKey::LPInitialDeposit(lp.clone());
-        let init_dep: u128 = env
-            .storage()
-            .persistent()
-            .get(&init_dep_key)
-            .unwrap_or(0);
+        let init_dep: u128 = env.storage().persistent().get(&init_dep_key).unwrap_or(0);
         let principal_portion = shares * init_dep / (lp_shares);
         let yield_earned = if usdc_to_return > principal_portion {
             usdc_to_return - principal_portion
@@ -193,11 +180,7 @@ impl PoolContract {
         };
 
         let yield_key = DataKey::LPYieldEarned(lp.clone());
-        let prev_yield: u128 = env
-            .storage()
-            .persistent()
-            .get(&yield_key)
-            .unwrap_or(0);
+        let prev_yield: u128 = env.storage().persistent().get(&yield_key).unwrap_or(0);
         env.storage()
             .persistent()
             .set(&yield_key, &(prev_yield + yield_earned));
@@ -242,7 +225,11 @@ impl PoolContract {
 
         let funded_amount = face_value * (10000 - discount_bps as u128) / 10000;
 
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap();
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap();
         let total_funded: u128 = env.storage().instance().get(&DataKey::TotalFunded).unwrap();
         let available = total_deposits - total_funded;
         if funded_amount > available {
@@ -280,9 +267,7 @@ impl PoolContract {
             .set(&DataKey::ActiveInvoiceCount, &(active_count + 1));
 
         let funded_key = DataKey::FundedInvoice(invoice_id.clone());
-        env.storage()
-            .persistent()
-            .set(&funded_key, &funded_amount);
+        env.storage().persistent().set(&funded_key, &funded_amount);
         env.storage()
             .persistent()
             .extend_ttl(&funded_key, 100, 2_000_000);
@@ -310,7 +295,11 @@ impl PoolContract {
         }
 
         let yield_amount = amount - funded_amount;
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap();
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap();
         let total_funded: u128 = env.storage().instance().get(&DataKey::TotalFunded).unwrap();
         let total_yield: u128 = env
             .storage()
@@ -321,12 +310,10 @@ impl PoolContract {
         env.storage()
             .instance()
             .set(&DataKey::TotalDeposits, &(total_deposits + yield_amount));
-        env.storage()
-            .instance()
-            .set(
-                &DataKey::TotalYieldDistributed,
-                &(total_yield + yield_amount),
-            );
+        env.storage().instance().set(
+            &DataKey::TotalYieldDistributed,
+            &(total_yield + yield_amount),
+        );
         env.storage()
             .instance()
             .set(&DataKey::TotalFunded, &(total_funded - funded_amount));
@@ -372,17 +359,18 @@ impl PoolContract {
         );
 
         let total_funded: u128 = env.storage().instance().get(&DataKey::TotalFunded).unwrap();
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap();
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap();
 
         env.storage()
             .instance()
             .set(&DataKey::TotalFunded, &(total_funded - funded_amount));
         env.storage()
             .instance()
-            .set(
-                &DataKey::TotalDeposits,
-                &(total_deposits - funded_amount),
-            );
+            .set(&DataKey::TotalDeposits, &(total_deposits - funded_amount));
 
         let active_count: u32 = env
             .storage()
@@ -400,8 +388,16 @@ impl PoolContract {
     }
 
     pub fn get_stats(env: Env) -> PoolStats {
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap_or(0);
-        let total_funded: u128 = env.storage().instance().get(&DataKey::TotalFunded).unwrap_or(0);
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap_or(0);
+        let total_funded: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalFunded)
+            .unwrap_or(0);
         let available = total_deposits - total_funded;
         let utilization = if total_deposits > 0 {
             (total_funded * 10000 / total_deposits) as u32
@@ -418,7 +414,11 @@ impl PoolContract {
             .instance()
             .get(&DataKey::ActiveInvoiceCount)
             .unwrap_or(0);
-        let total_shares: u128 = env.storage().instance().get(&DataKey::TotalShares).unwrap_or(0);
+        let total_shares: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalShares)
+            .unwrap_or(0);
 
         PoolStats {
             total_deposits,
@@ -437,8 +437,16 @@ impl PoolContract {
             .persistent()
             .get(&DataKey::LPShares(lp.clone()))
             .unwrap_or(0);
-        let total_shares: u128 = env.storage().instance().get(&DataKey::TotalShares).unwrap_or(0);
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap_or(0);
+        let total_shares: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalShares)
+            .unwrap_or(0);
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap_or(0);
 
         let usdc_value = if total_shares > 0 && lp_shares > 0 {
             lp_shares * total_deposits / total_shares
@@ -466,8 +474,16 @@ impl PoolContract {
     }
 
     pub fn get_utilization_rate(env: Env) -> u32 {
-        let total_deposits: u128 = env.storage().instance().get(&DataKey::TotalDeposits).unwrap_or(0);
-        let total_funded: u128 = env.storage().instance().get(&DataKey::TotalFunded).unwrap_or(0);
+        let total_deposits: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalDeposits)
+            .unwrap_or(0);
+        let total_funded: u128 = env
+            .storage()
+            .instance()
+            .get(&DataKey::TotalFunded)
+            .unwrap_or(0);
         if total_deposits == 0 {
             return 0;
         }

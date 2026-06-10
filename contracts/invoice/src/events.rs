@@ -1,6 +1,12 @@
 use soroban_sdk::{Address, BytesN, Env, Symbol};
 
-pub fn invoice_created(env: &Env, invoice_id: &BytesN<32>, issuer: &Address, buyer: &Address, face_value: &u128) {
+pub fn invoice_created(
+    env: &Env,
+    invoice_id: &BytesN<32>,
+    issuer: &Address,
+    buyer: &Address,
+    face_value: &u128,
+) {
     env.events().publish(
         (
             Symbol::new(env, "invoice_created"),
@@ -45,10 +51,8 @@ pub fn delivery_confirmed(env: &Env, invoice_id: &BytesN<32>, confirmer: &Addres
 }
 
 pub fn both_confirmed(env: &Env, invoice_id: &BytesN<32>) {
-    env.events().publish(
-        (Symbol::new(env, "both_confirmed"), invoice_id.clone()),
-        (),
-    );
+    env.events()
+        .publish((Symbol::new(env, "both_confirmed"), invoice_id.clone()), ());
 }
 
 pub fn invoice_repaid(env: &Env, invoice_id: &BytesN<32>, amount: &u128) {
