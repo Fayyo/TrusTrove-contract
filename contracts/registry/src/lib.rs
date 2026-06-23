@@ -69,6 +69,21 @@ impl RegistryContract {
         true
     }
 
+    pub fn update_metadata(env: Env, address: Address, metadata: Map<String, String>) -> bool {
+        address.require_auth();
+        let key = DataKey::Profile(address.clone());
+        let mut profile: Profile = env
+            .storage()
+            .persistent()
+            .get(&key)
+            .unwrap_or_else(|| panic_with_error!(&env, RegistryError::NotFound));
+        profile.metadata = metadata;
+        env.storage().persistent().set(&key, &profile);
+        env.storage().persistent().extend_ttl(&key, 100, 2_000_000);
+        events::metadata_updated(&env, &address);
+        true
+    }
+
     pub fn get_profile(env: Env, address: Address) -> Profile {
         env.storage()
             .persistent()
