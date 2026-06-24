@@ -1,7 +1,7 @@
 use soroban_sdk::{contracttype, Address, BytesN};
 
 #[contracttype]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InvoiceStatus {
     Created,
     Listed,
@@ -42,6 +42,12 @@ pub enum DataKey {
     PoolContract,
     Counter,
     Invoice(BytesN<32>),
+    IssuerIndexCount(Address),
+    BuyerIndexCount(Address),
+    StatusIndexCount(u32),
+    IssuerIndexEntry(Address, u32),
+    BuyerIndexEntry(Address, u32),
+    StatusIndexEntry(u32, u32),
     InvoicesByIssuer(Address),
     InvoicesByBuyer(Address),
     InvoicesByStatus(u32),
